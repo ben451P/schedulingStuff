@@ -53,7 +53,7 @@ class Guard:
             self.lunch_break = True
 
     def is_available_at(self, time: int) -> bool:
-        return self.start_time <= time <= self.end_time
+        return self.start_time <= time < self.end_time
 
 class Scheduler:
     def __init__(self, shifts):
@@ -122,7 +122,6 @@ class Scheduler:
 
             #this is a rotation #####
             new_state = prev_state.copy()
-            print(new_state)
 
             temp = new_state.copy() + [-1] * (len(ROTATION_CYCLE) - len(new_state))
             importance_index = {name: i for i, name in enumerate(STATION_IMPORTANCE_DESCENDING[::-1])}
@@ -130,19 +129,20 @@ class Scheduler:
             while reordered[-1] == -1:
                 reordered.pop(-1)
             print(minutes_to_time(time))
-
-            temp = reordered[0]
+            print(reordered)
+            temp = reordered[-1]
             gap = 1
-            pointer = 0
-            while pointer < len(reordered) - 1:
-                if reordered[pointer+gap] == -1:
+            pointer = len(reordered) - 1
+            while pointer > 0:
+                if reordered[pointer - gap] == -1:
                     gap += 1
                 else:
-                    reordered[pointer] = reordered[pointer + gap]
-                    pointer += gap
+                    reordered[pointer] = reordered[pointer - gap]
+                    pointer -= gap
                     gap = 1
-            reordered[-1] = temp
-            
+            reordered[0] = temp
+
+            print(reordered,"\n")
             temp = reordered.copy() + [-1] * (len(ROTATION_CYCLE) - len(reordered))
             cycle_index = {name: i for i, name in enumerate(ROTATION_CYCLE)}
             original_order = [temp[cycle_index[station]] for station in STATION_IMPORTANCE_DESCENDING[::-1]]
@@ -152,7 +152,6 @@ class Scheduler:
             
             new_state = original_order.copy()
 
-            print(new_state)
             #up to here ####
 
             if prev_availability != availability:
