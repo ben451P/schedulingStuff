@@ -1,6 +1,7 @@
 from datetime import datetime
 import numpy as np
 import pandas as pd
+import csv
 
 ROTATION_CYCLE = [
     "Kiddie", "Dive", "Main", "Break", "First Aid", "Slide",
@@ -92,6 +93,7 @@ class Scheduler:
     def available_guards(self, time_str):
         time = time_to_minutes(time_str)
         availability = [int(g.is_available_at(time)) for g in self.guards]
+        # print(time_str, availability)
         return availability, availability.count(True)
 
     def schedule_lunches(self):
@@ -103,13 +105,7 @@ class Scheduler:
         influx = None
         drop = 0
 
-    #schedulers toolbox
-    #START ###############################
-    def shift_rotation_start():
-        pass
 
-    #exchanges 2 nums in the rotation schedule
-    
 
 
     def create_base_schedule(self):
@@ -121,67 +117,81 @@ class Scheduler:
         for i,j in enumerate(prev_availability):
             if j:prev_state.append(i+1)
 
-        for i in range(len(self.schedule)):
+        for row in range(len(self.schedule)):
             availability,num_avail = self.available_guards(minutes_to_time(time))
 
-            #this is a rotation
+            #this is a rotation #####
             new_state = prev_state.copy()
+
+            # temp = new_state.copy() + [-1] * (len(ROTATION_CYCLE) - len(new_state))
+            # importance_index = {name: i for i, name in enumerate(STATION_IMPORTANCE_DESCENDING)}
+            # reordered = [temp[importance_index[station]] for station in ROTATION_CYCLE]
+            # reordered = reordered[:len(reordered) - reordered[::-1].index(-1) - 1]
+
+            # temp = reordered[-1]
+            # gap = 1
+            # for i in range(1,len(reordered)):
+            #     if reordered[i] == -1:
+            #         gap += 1
+            #     else:
+            #         reordered[i] = reordered[i-gap]
+            #         gap = 1
+            # reordered[0] = temp
+            
+            # temp = reordered.copy() + [-1] * (len(ROTATION_CYCLE) - len(reordered))
+            # cycle_index = {name: i for i, name in enumerate(ROTATION_CYCLE)}
+            # original_order = [temp[cycle_index[station]] for station in STATION_IMPORTANCE_DESCENDING]
+
+            # new_state = original_order[:len(original_order) - original_order[::-1].index(-1) - 1]
+            # print(prev_state,"\n",new_state,"\n\n")
             new_state.append(new_state.pop(0))
+            #up to here ####
 
             if prev_availability != availability:
                 for i in range(len(availability)):
                     if not availability[i] and prev_availability[i]:
                         new_state[new_state.index(i)] = -1
-                        
-
-
-            #also bad because some guards leave and go, so rotation may include same number but not the same ppl
-            
+                for i in range(len(availability)):
+                    if availability[i] and not prev_availability[i]:
+                        if -1 in new_state:
+                            new_state[new_state.index(-1)] = i
+                                    
             if num_avail > prev_num_avail:
                 for guard_num in range(len(availability)):
                     if availability[guard_num] and guard_num not in new_state:
                         new_state.append(guard_num)
 
-            elif num_avail < prev_num_avail or prev_availability != availability:
-                for guard_num in range(len(availability)):
-                    if not availability[guard_num] and guard_num in new_state:
-                        index_of_guard_num = new_state.find(guard_num)
-
-                        if index_of_guard_num != len(new_state) - 1:
-                            #change numbers this rotation
-                            temp = new_state[index_of_guard_num]
-                            new_state[index_of_guard_num] = new_state[-1]
-                            new_state[-1] = temp
-                            #change numbers in previous rotations
-                            #bad solution because changes numbers of alrdy fixd solutions (needs a list of alrdy fixed schedules)
-                            self.exchange_numbers(guard_num, new_state[-1],time - 15)
-                        new_state.pop(-1)
+            elif num_avail < prev_num_avail:
+                while -1 in new_state:
+                    index = new_state.index(-1)
+                    temp = new_state[index]
+                    new_state[index] = new_state[-1]
+                    new_state.pop(-1)
 
 
-
-            elif prev_availability != availability:
-                for i in range(len(availability)):
-                    if not availability[i] and prev_availability[i]:
-                        new_state[new_state.index(i)] = -1
-
-            self.schedule[i] = new_state + [-1] * (len(ROTATION_CYCLE) - len(new_state))
+            self.schedule[row] = new_state + [-1] * (len(ROTATION_CYCLE) - len(new_state))
 
             time += 15
-            prev_availability = availability
+            prev_availability = availability.copy()
             prev_num_avail = num_avail
             prev_state = new_state.copy()
             
     def convert_to_csv(self):
         print(self.schedule)
-        schedule = np.array(self.schedule)
-        schedule = schedule.transpose()
-        temp_dict = {STATION_IMPORTANCE_DESCENDING[i]:schedule[i] for i in range(len(STATION_IMPORTANCE_DESCENDING))}
-        final_list = []
-        for item in ROTATION_CYCLE:
-            final_list.append(temp_dict[item])
-        final = pd.DataFrame(final_list, columns=[minutes_to_time(i) for i in range(self.start,self.end,15)])
-        # final.loc(ROTATION_CYCLE)
-        final.to_csv("schedule2.csv")
+        times = [minutes_to_time(t) for t in range(self.start, self.end, 15)]
+
+        df = pd.DataFrame(
+            self.schedule,
+            index=times,
+            columns=STATION_IMPORTANCE_DESCENDING[::-1]
+        )
+
+        df = df[ROTATION_CYCLE]
+
+        df = df.T
+
+        df.to_csv("schedule2.csv", index_label="Time")
+
         print("written")
 
     #main function
