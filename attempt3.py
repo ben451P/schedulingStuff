@@ -3,6 +3,20 @@ import numpy as np
 import pandas as pd
 import csv
 
+class Station:
+    def __init__(self, name, times_when_open: list):
+        self.name = name
+        self.times_when_open = times_when_open #list with tuples (start_time,end_time)
+
+    def __repr__(self):
+        return self.name
+    
+    def should_be_open_at(self,time):
+        for item in self.times_when_open:
+            if time_to_minutes(item[0]) <= time < time_to_minutes(item[1]):
+                return True
+        return False
+
 ROTATION_CYCLE = [
     "Kiddie", "Dive", "Main", "Break", "First Aid", "Slide",
     "Main2", "Rover", "Lap", "See Manager", "Bathroom Break"
@@ -47,33 +61,22 @@ def minutes_to_time(minutes: int) -> str:
 
 ACCEPTABLE_LUNCH_START_TIME_RANGE = (time_to_minutes("13:00"), time_to_minutes("16:00"))
 
-class Station:
-    def __init__(self, name, times_when_open: list):
-        self.name = name
-        self.times_when_open = times_when_open #list with tuples (start_time,end_time)
-
-    def __repr__(self):
-        return self.name
-    
-    def should_be_open_at(self,time):
-        for item in self.times_when_open:
-            if item[0] <= time < item[1]:
-                return True
-        return False
-
 class Guard:
     def __init__(self, name, start, end):
         self.name = name
         self.start_time = time_to_minutes(start)
         self.end_time = time_to_minutes(end)
         self.lunch_break = self.end_time - self.start_time > 360
-        self.lunch_hours = None
+        self.lunch_break_start = 0
+        self.lunch_break_end = 0
 
     def __repr__(self):
         return self.name
 
     def is_available_at(self, time: int) -> bool:
-        return self.start_time <= time < self.end_time
+        on_shift = self.start_time <= time < self.end_time
+        on_break = self.lunch_break_start <= time < self.lunch_break_end
+        return on_shift and not on_break
 
 class Scheduler:
     def __init__(self, shifts):
@@ -115,33 +118,60 @@ class Scheduler:
         availability = [int(g.is_available_at(time)) for g in self.guards]
         # print(time_str, availability)
         return availability, availability.count(True)
+    
+    def needed_stations(self,time):
+        needed = [0 for _ in range(len(STATION_IMPORTANCE_DESCENDING))]
+        for j, i in enumerate(STATION_IMPORTANCE_DESCENDING):
+            station = STATION_MAP[i]
+            for t in range(time,time + 60, 15):
+                if station.should_be_open_at(t):
+                    needed[j] = 1
+                    break
+                
+        return needed, needed.count(1)
 
-    # def schedule_lunches(self):
-    #     #check when more guards will be coming onto shift during the alloted lunch break time
-    #     #whenever guards come on, that many guards may leave. (later, exceptions should be coded in during camps and other stuff that may require more guards during certain times)
-    #     #if we cant fit all the guards that need breaks into the alloted time, we start dropping stations in order of importance (later on avoiding the busy time)
-    #     #iterate until all guards that need a break have one
-    #     period_start, period_end = ACCEPTABLE_LUNCH_START_TIME_RANGE
-    #     influx = 0
-    #     drop = 0
-    #     fodder = 3 - 1 #3 stations fodder but -1 for indexing
-    #     finished_scheduling = False
+    def schedule_lunches(self):
+        #check when more guards will be coming onto shift during the alloted lunch break time
+        #whenever guards come on, that many guards may leave. (later, exceptions should be coded in during camps and other stuff that may require more guards during certain times)
+        #if we cant fit all the guards that need breaks into the alloted time, we start dropping stations in order of importance (later on avoiding the busy time)
+        #iterate until all guards that need a break have one
+        period_start, period_end = ACCEPTABLE_LUNCH_START_TIME_RANGE
+        influx = 0
+        drop = 0
+        finished_scheduling = False
 
-    #     lunch_break_periods = (period_end - period_start) % 60
-    #     needed_lunch_breaks = [guard.lunch_break for guard in self.guards].count(True)
+        # lunch_break_periods = (period_end - period_start) % 60
+        needed_lunch_breaks = [guard.lunch_break for guard in self.guards]
 
         
 
-    #     while not finished_scheduling:
-    #         for time in range(period_start,period_end, 15):
-    #             if self.available_guards(time) > len()
+        while not finished_scheduling:
+            check = needed_lunch_breaks.copy()
+            for time in range(period_start,period_end, 15):
+                avail_guards, num_avail_guards = self.available_guards(minutes_to_time(time))
+                needed_stats, num_needed_stats = self.needed_stations(time)
 
+                difference = num_needed_stats - num_avail_guards - drop
 
-    #         for i in range(period_start / 15,(period_end - period_start) / 15):
-
-
-
-
+                #need to correct for assumption that least important station is gonna go
+                while difference > 0:
+                    #give lunch breaks while there is a difference
+                    if True in check:
+                        index = check.index(True)
+                        check[index] = time
+                    difference -= 1
+                #increment for looop
+            if True not in check:
+                finished_scheduling = True
+            # check if everyones break is scheduled
+            drop += 1
+        
+        #updating the actual info
+        for i in range(len(self.guards)):
+            if check[i]:
+                self.guards[i].lunch_break_start = check[i]
+                self.guards[i].lunch_break_end = check[i] + 60
+                    
 
     def create_base_schedule(self):
         time = time_to_minutes("11:00")
@@ -161,7 +191,7 @@ class Scheduler:
             temp = new_state.copy() + [-1] * (len(ROTATION_CYCLE) - len(new_state))
             importance_index = {name: i for i, name in enumerate(STATION_IMPORTANCE_DESCENDING[::-1])}
             reordered = [temp[importance_index[station]] for station in ROTATION_CYCLE]
-            while reordered[-1] == -1:
+            while reordered and reordered[-1] == -1:
                 reordered.pop(-1)
 
             temp = reordered[-1]
@@ -179,7 +209,7 @@ class Scheduler:
             temp = reordered.copy() + [-1] * (len(ROTATION_CYCLE) - len(reordered))
             cycle_index = {name: i for i, name in enumerate(ROTATION_CYCLE)}
             original_order = [temp[cycle_index[station]] for station in STATION_IMPORTANCE_DESCENDING[::-1]]
-            while original_order[-1] == -1:
+            while original_order and original_order[-1] == -1:
                 original_order.pop(-1)
             
             new_state = original_order.copy()
@@ -216,7 +246,9 @@ class Scheduler:
             prev_state = new_state.copy()
             
     def convert_to_csv(self):
-        print(self.schedule)
+        for guard in self.guards:
+            print(guard.lunch_break_start,guard.lunch_break_end)
+
         times = [minutes_to_time(t) for t in range(self.start, self.end, 15)]
 
         df = pd.DataFrame(
@@ -229,7 +261,7 @@ class Scheduler:
 
         df = df.T
 
-        df.to_csv("schedule2.csv", index_label="Time")
+        df.to_csv("schedule3.csv", index_label="Time")
 
         print("written")
 
@@ -240,5 +272,6 @@ class Scheduler:
                 pass
 
 scheduler = Scheduler(shifts)
+scheduler.schedule_lunches()
 scheduler.create_base_schedule()
 scheduler.convert_to_csv()
