@@ -6,7 +6,8 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-
+START = "12:00"
+END = "19:30"
 
 class Station:
     def __init__(self, name, times_when_open: list):
@@ -88,8 +89,8 @@ class Scheduler:
         self.shifts = shifts
         self.guards = self.schedule_to_class()
         self.complete_schedule = False
-        self.start = time_to_minutes("11:00")
-        self.end = time_to_minutes("19:30")
+        self.start = time_to_minutes(START)
+        self.end = time_to_minutes(END)
         #schedule rows are time, cols are stations, in order of importance not actual rotation thing
         self.schedule = [[-1 for i in ROTATION_CYCLE] for _ in range(self.start,self.end,15)]
 
@@ -180,7 +181,7 @@ class Scheduler:
                 self.guards[i].lunch_break_end = check[i] + 60
 
     def create_base_schedule(self):
-        time = time_to_minutes("11:00")
+        time = time_to_minutes(START)
 
         prev_availability, prev_num_avail = self.available_guards(minutes_to_time(time))
 
@@ -193,7 +194,7 @@ class Scheduler:
 
             #this is a rotation #####
             new_state = prev_state.copy()
-
+            print(new_state)
             if prev_availability != availability:
                 for i in range(len(availability)):
                     
@@ -210,12 +211,13 @@ class Scheduler:
                         new_state.append(guard_num)
 
             elif num_avail < prev_num_avail:
+                print(num_avail,prev_num_avail, time, minutes_to_time(time))
                 while -1 in new_state:
                     index = new_state.index(-1)
                     temp = new_state[index]
                     new_state[index] = new_state[-1]
                     new_state.pop(-1)
-
+            print(new_state)
             temp = new_state.copy() + [-1] * (len(ROTATION_CYCLE) - len(new_state))
             importance_index = {name: i for i, name in enumerate(STATION_IMPORTANCE_DESCENDING[::-1])}
             reordered = [temp[importance_index[station]] for station in ROTATION_CYCLE]
@@ -226,11 +228,10 @@ class Scheduler:
             while reordered and reordered[0] == -1:
                 reordered.pop(0)
                 front_negs += 1
-
+            print(reordered)
             temp = reordered[-1]
             gap = 1
             pointer = len(reordered) - 1
-            print(reordered)
             # Remove temp from its current position before rotation
             while pointer > 0:
                 if reordered[pointer - gap] == -1:
@@ -253,6 +254,7 @@ class Scheduler:
             new_state = original_order.copy()
             #up to here ####
             print(new_state)
+            print("----------------")
             
             
 
