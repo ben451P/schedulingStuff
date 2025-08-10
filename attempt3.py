@@ -2,6 +2,11 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import csv
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from openpyxl.utils.dataframe import dataframe_to_rows
+
+
 
 class Station:
     def __init__(self, name, times_when_open: list):
@@ -100,7 +105,6 @@ class Scheduler:
             else:
                 guards.append(guard)
         return guards
-    
 
 
     def exchange_numbers(self,num1, num2, time):
@@ -116,7 +120,6 @@ class Scheduler:
     def available_guards(self, time_str):
         time = time_to_minutes(time_str)
         availability = [int(g.is_available_at(time)) for g in self.guards]
-        # print(time_str, availability)
         return availability, availability.count(True)
     
     def needed_stations(self,time):
@@ -131,28 +134,23 @@ class Scheduler:
         return needed, needed.count(1)
 
     def schedule_lunches(self):
-        #check when more guards will be coming onto shift during the alloted lunch break time
-        #whenever guards come on, that many guards may leave. (later, exceptions should be coded in during camps and other stuff that may require more guards during certain times)
-        #if we cant fit all the guards that need breaks into the alloted time, we start dropping stations in order of importance (later on avoiding the busy time)
-        #iterate until all guards that need a break have one
+    
         period_start, period_end = ACCEPTABLE_LUNCH_START_TIME_RANGE
-        influx = 0
         drop = 0
         finished_scheduling = False
 
-        # lunch_break_periods = (period_end - period_start) % 60
         needed_lunch_breaks = [guard.lunch_break for guard in self.guards]
 
         
 
         while not finished_scheduling:
             check = needed_lunch_breaks.copy()
+            temp_guards_on_break = []
             for time in range(period_start,period_end, 15):
                 avail_guards, num_avail_guards = self.available_guards(minutes_to_time(time))
                 needed_stats, num_needed_stats = self.needed_stations(time)
-                print(num_needed_stats, num_avail_guards, drop)
 
-                difference = num_needed_stats - num_avail_guards - drop
+                difference = num_needed_stats - num_avail_guards - drop + len(temp_guards_on_break)
 
                 #need to correct for assumption that least important station is gonna go
                 while difference < 0:
@@ -160,8 +158,16 @@ class Scheduler:
                     if True in check:
                         index = check.index(True)
                         check[index] = time
+                        temp_guards_on_break.append(4)
                     difference += 1
                 #increment for looop
+                pointer = 0
+                while pointer < len(temp_guards_on_break):
+                    temp_guards_on_break[pointer] -= 1
+                    if temp_guards_on_break[pointer] == 0:
+                        temp_guards_on_break.pop(pointer)
+                    else:pointer += 1
+
             if True not in check:
                 finished_scheduling = True
             # check if everyones break is scheduled
@@ -246,33 +252,105 @@ class Scheduler:
             prev_num_avail = num_avail
             prev_state = new_state.copy()
             
-    def convert_to_csv(self):
+    def convert_to_excel(self):
         for guard in self.guards:
-            print(guard.lunch_break_start,guard.lunch_break_end)
-
+            start = guard.lunch_break_start
+            end = guard.lunch_break_end
+            print(start, minutes_to_time(start))
+        # Create workbook and worksheet
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Schedule"
+        
+        # Generate time headers (15-minute intervals)
         times = [minutes_to_time(t) for t in range(self.start, self.end, 15)]
-
+        
+        # Create DataFrame for easier manipulation
         df = pd.DataFrame(
             self.schedule,
             index=times,
             columns=STATION_IMPORTANCE_DESCENDING[::-1]
         )
-
-        df = df[ROTATION_CYCLE]
-
-        df = df.T
-
-        df.to_csv("schedule3.csv", index_label="Time")
-
-        print("written")
-
-    #main function
-    def iterate_schedule(start,end,schedule):
-        for i in range(len(schedule)):
-            for j in range(len(schedule[i])):
-                pass
+        df = df[ROTATION_CYCLE]  # Reorder columns to match rotation cycle
+        df = df.T  # Transpose so stations are rows
+        
+        # Write headers
+        ws['A1'] = 'Time'
+        for col_idx, time in enumerate(times, start=2):
+            ws.cell(row=1, column=col_idx, value=time)
+        
+        # Write station names and data
+        for row_idx, station in enumerate(ROTATION_CYCLE, start=2):
+            ws.cell(row=row_idx, column=1, value=station)
+            for col_idx, time in enumerate(times, start=2):
+                value = df.loc[station, time]
+                if value == -1:
+                    ws.cell(row=row_idx, column=col_idx, value="")
+                else:
+                    ws.cell(row=row_idx, column=col_idx, value=value)
+        
+        # Apply styling
+        self._apply_excel_styling(ws, len(times))
+        
+        # Save workbook
+        wb.save("schedule.xlsx")
+        print("Excel file written: schedule.xlsx")
+    
+    def _apply_excel_styling(self, ws, num_time_cols):
+        # Define colors and styles
+        header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+        station_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+        data_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+        
+        header_font = Font(color="FFFFFF", bold=True, size=10)
+        station_font = Font(bold=True, size=10)
+        data_font = Font(size=10)
+        
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        
+        thin_border = Border(
+            left=Side(style="thin"),
+            right=Side(style="thin"),
+            top=Side(style="thin"),
+            bottom=Side(style="thin")
+        )
+        
+        # Style header row (time row)
+        for col in range(1, num_time_cols + 2):
+            cell = ws.cell(row=1, column=col)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_alignment
+            cell.border = thin_border
+        
+        # Style station column and data
+        for row in range(2, len(ROTATION_CYCLE) + 2):
+            # Station name column
+            station_cell = ws.cell(row=row, column=1)
+            station_cell.fill = station_fill
+            station_cell.font = station_font
+            station_cell.alignment = center_alignment
+            station_cell.border = thin_border
+            
+            # Data columns
+            for col in range(2, num_time_cols + 2):
+                data_cell = ws.cell(row=row, column=col)
+                data_cell.fill = data_fill
+                data_cell.font = data_font
+                data_cell.alignment = center_alignment
+                data_cell.border = thin_border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 12
+        for col_idx in range(2, num_time_cols + 2):
+            col_letter = ws.cell(row=1, column=col_idx).column_letter
+            ws.column_dimensions[col_letter].width = 6
+        
+        # Set row height
+        for row in range(1, len(ROTATION_CYCLE) + 2):
+            ws.row_dimensions[row].height = 20
 
 scheduler = Scheduler(shifts)
 scheduler.schedule_lunches()
 scheduler.create_base_schedule()
-scheduler.convert_to_csv()
+scheduler.convert_to_excel()
