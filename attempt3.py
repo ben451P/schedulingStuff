@@ -41,8 +41,8 @@ shifts = {
     "Guard D": ("10:30", "16:00"),
     "Guard E": ("11:00", "20:00"),
     "Guard F": ("11:00", "20:00"),
-    # "Guard G": ("11:00", "20:00"),
-    # "Guard H": ("11:00", "20:00"),
+    "Guard G": ("11:00", "20:00"),
+    "Guard H": ("11:00", "20:00"),
     "Guard I": ("13:00", "19:00"),
     "Guard J": ("14:00", "20:00"),
     "Guard K": ("14:00", "20:00"),
@@ -150,16 +150,17 @@ class Scheduler:
             for time in range(period_start,period_end, 15):
                 avail_guards, num_avail_guards = self.available_guards(minutes_to_time(time))
                 needed_stats, num_needed_stats = self.needed_stations(time)
+                print(num_needed_stats, num_avail_guards, drop)
 
                 difference = num_needed_stats - num_avail_guards - drop
 
                 #need to correct for assumption that least important station is gonna go
-                while difference > 0:
+                while difference < 0:
                     #give lunch breaks while there is a difference
                     if True in check:
                         index = check.index(True)
                         check[index] = time
-                    difference -= 1
+                    difference += 1
                 #increment for looop
             if True not in check:
                 finished_scheduling = True
