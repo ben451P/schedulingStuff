@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Rotation Cycle - File Processor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-sync-alt me-2"></i>Rotation Cycle</h2>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Home
+    </a>
+</div>
+
+<form method="POST" action="{{ url_for('importance') }}">
+    <div class="mb-3 text-end">
+        <!-- Big Save All button -->
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-save me-2"></i>Save All
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 90px;">Position</th>
+                            <th>Station Name</th>
+                            <th style="width: 160px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rotation-tbody">
+                        {% for station in cycles %}
+                        <tr>
+                            <td class="align-middle text-center">
+                                <span class="badge bg-primary position-badge">{{ loop.index }}</span>
+                            </td>
+                            <td>
+                                <!-- Hidden id array (order is given by DOM order on submit) -->
+                                <input type="hidden" name="station_id[]" class="station-id" value="{{ station }}">
+                                <div class="input-group input-group-sm">
+                                    <!-- If you want users to rename stations, keep this input. -->
+                                    <input type="text" class="form-control" name="station_name[]" value="{{ station }}" required disabled>
+                                </div>
+                            </td>
+                            <td class="align-middle">
+                                <div class="btn-group" role="group" aria-label="move">
+                                    <button type="button" class="btn btn-outline-primary btn-sm btn-move-up" title="Move up">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm btn-move-down" title="Move down">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- JavaScript: swaps rows and updates badges -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tbody = document.getElementById('rotation-tbody');
+
+    // event delegation for up/down buttons
+    tbody.addEventListener('click', (e) => {
+        const upBtn = e.target.closest('.btn-move-up');
+        const downBtn = e.target.closest('.btn-move-down');
+
+        if (upBtn) {
+            const row = upBtn.closest('tr');
+            moveUp(row);
+        } else if (downBtn) {
+            const row = downBtn.closest('tr');
+            moveDown(row);
+        }
+    });
+
+    function moveUp(row) {
+        const prev = row.previousElementSibling;
+        if (!prev) return; // already at top
+        tbody.insertBefore(row, prev);
+        updatePositions();
+    }
+
+    function moveDown(row) {
+        const next = row.nextElementSibling;
+        if (!next) return; // already at bottom
+        // insert the next before row to swap positions
+        tbody.insertBefore(next, row);
+        updatePositions();
+    }
+
+    function updatePositions() {
+        // update number badges and enable/disable up/down buttons on first/last row
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.forEach((r, idx) => {
+            const badge = r.querySelector('.position-badge');
+            if (badge) badge.textContent = (idx + 1).toString();
+
+            const up = r.querySelector('.btn-move-up');
+            const down = r.querySelector('.btn-move-down');
+            if (up) up.disabled = (idx === 0);
+            if (down) down.disabled = (idx === rows.length - 1);
+        });
+    }
+
+    // initial state
+    updatePositions();
+});
+</script>
+{% endblock %}

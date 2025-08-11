@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Rotation Cycle - File Processor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-sync-alt me-2"></i>Rotation Cycle</h2>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Home
+    </a>
+</div>
+
+<form method="POST" action="{{ url_for('rotation_cycle') }}">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <button type="button" id="btn-add-station" class="btn btn-outline-success">
+                <i class="fas fa-plus me-1"></i> Add Station
+            </button>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save me-2"></i> Save All
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 90px;">Position</th>
+                            <th>Station Name</th>
+                            <th style="width: 200px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rotation-tbody">
+                        {# Support either list-of-dicts or legacy list-of-strings #}
+                        {% for station in cycles %}
+                        <tr>
+                            <td class="align-middle text-center">
+                                <span class="badge bg-primary position-badge">{{ loop.index }}</span>
+                            </td>
+                            <td>
+                                <input type="hidden" name="station_id[]" class="station-id"
+                                       value="{% if station.id is defined %}{{ station.id }}{% else %}{{ station }}{% endif %}">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control station-name" name="station_name[]"
+                                           value="{% if station.name is defined %}{{ station.name }}{% else %}{{ station }}{% endif %}"
+                                           placeholder="Station name" required>
+                                </div>
+                            </td>
+                            <td class="align-middle">
+                                <div class="btn-group me-2" role="group" aria-label="move">
+                                    <button type="button" class="btn btn-outline-primary btn-sm btn-move-up" title="Move up">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm btn-move-down" title="Move down">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </button>
+                                </div>
+
+                                <div class="btn-group" role="group" aria-label="row-actions">
+                                    <button type="button" class="btn btn-outline-warning btn-sm btn-rename" title="Rename">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-delete" title="Remove">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tbody = document.getElementById('rotation-tbody');
+    const btnAdd = document.getElementById('btn-add-station');
+
+    // Delegated click handling for row buttons
+    tbody.addEventListener('click', (e) => {
+        const upBtn = e.target.closest('.btn-move-up');
+        const downBtn = e.target.closest('.btn-move-down');
+        const delBtn = e.target.closest('.btn-delete');
+        const renameBtn = e.target.closest('.btn-rename');
+
+        if (upBtn) moveUp(upBtn.closest('tr'));
+        else if (downBtn) moveDown(downBtn.closest('tr'));
+        else if (delBtn) removeRow(delBtn.closest('tr'));
+        else if (renameBtn) focusRename(renameBtn.closest('tr'));
+    });
+
+    // Add station
+    btnAdd.addEventListener('click', () => {
+        addRow();
+    });
+
+    function moveUp(row) {
+        const prev = row.previousElementSibling;
+        if (!prev) return;
+        tbody.insertBefore(row, prev);
+        updatePositions();
+    }
+
+    function moveDown(row) {
+        const next = row.nextElementSibling;
+        if (!next) return;
+        tbody.insertBefore(next, row);
+        updatePositions();
+    }
+
+    function removeRow(row) {
+        if (!row) return;
+        row.remove();
+        updatePositions();
+    }
+
+    function focusRename(row) {
+        const input = row.querySelector('.station-name');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }
+
+    function updatePositions() {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.forEach((r, idx) => {
+            const badge = r.querySelector('.position-badge');
+            if (badge) badge.textContent = (idx + 1).toString();
+
+            const up = r.querySelector('.btn-move-up');
+            const down = r.querySelector('.btn-move-down');
+            if (up) up.disabled = (idx === 0);
+            if (down) down.disabled = (idx === rows.length - 1);
+        });
+    }
+
+    // create a new row and append, focus the name input
+    function addRow(name = '') {
+        let id = null;
+        // modern browsers support crypto.randomUUID()
+        if (window.crypto && crypto.randomUUID) id = crypto.randomUUID();
+        else id = 'new-' + Date.now() + '-' + Math.floor(Math.random()*10000);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="align-middle text-center">
+                <span class="badge bg-primary position-badge">0</span>
+            </td>
+            <td>
+                <input type="hidden" name="station_id[]" class="station-id" value="${id}">
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control station-name" name="station_name[]" value="${escapeHtml(name)}" placeholder="Station name" required>
+                </div>
+            </td>
+            <td class="align-middle">
+                <div class="btn-group me-2" role="group" aria-label="move">
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-move-up" title="Move up">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-move-down" title="Move down">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                </div>
+
+                <div class="btn-group" role="group" aria-label="row-actions">
+                    <button type="button" class="btn btn-outline-warning btn-sm btn-rename" title="Rename">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-delete" title="Remove">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        updatePositions();
+
+        // focus name input
+        const input = tr.querySelector('.station-name');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }
+
+    // small helper to protect against injected values when creating DOM strings
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe.replace(/[&<"'>]/g, function (m) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);
+        });
+    }
+
+    // initial setup
+    updatePositions();
+});
+</script>
+{% endblock %}

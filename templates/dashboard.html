@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-cogs fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Fixed Variables</h5>
+                <p class="card-text">Manage system configuration variables</p>
+                <a href="{{ url_for('fixed_vars') }}" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-sync-alt fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Rotation Cycle</h5>
+                <p class="card-text">Configure rotation schedules</p>
+                <a href="{{ url_for('rotation_cycle') }}" class="btn btn-success">Manage</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Importance</h5>
+                <p class="card-text">Set priority levels and scores</p>
+                <a href="{{ url_for('importance') }}" class="btn btn-warning">Manage</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-clock fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Shifts</h5>
+                <p class="card-text">Manage work shifts and schedules</p>
+                <a href="{{ url_for('shifts') }}" class="btn btn-info">Manage</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-file-excel fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Generate Excel Report</h5>
+                <p class="card-text">Download system data as Excel file</p>
+                <a href="" class="btn btn-success">
+                    <i class="fas fa-download me-2"></i>Download XLSX
+                </a>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
