@@ -23,7 +23,7 @@ class Scheduler:
         self.coverage_times = coverage_times
 
         #schedule rows are time, cols are stations, in order of importance not actual rotation thing
-        self.schedule = [[-1 for i in self.rotation_cycle] for _ in range(self.start,self.end,15)]
+        self.schedule = [[-1 for _ in self.rotation_cycle] for _ in range(self.start,self.end,15)]
 
         self.station_map = {i:Station(i,self.coverage_times[i]) for i in self.rotation_cycle}
 
@@ -107,6 +107,19 @@ class Scheduler:
                 self.guards[i].lunch_break_start = check[i]
                 self.guards[i].lunch_break_end = check[i] + 60
 
+    def add_fodder_station(self, index):
+        count = 1
+        for i in self.rotation_cycle:
+            if "Standby" in i:
+                count += 1
+        station_name = "Standby" + str(count)
+
+        self.station_importance_descending.insert(0,station_name)
+        self.rotation_cycle.append(station_name)
+
+        for i in range(index):
+            self.schedule[i].append(-1)
+
     def create_base_schedule(self):
         time = self.start
 
@@ -119,29 +132,37 @@ class Scheduler:
         for row in range(len(self.schedule)):
             availability,num_avail = self.available_guards(minutes_to_time(time))
 
-            #this is a rotation #####
+            if num_avail > len(self.schedule[row]):
+                self.add_fodder_station(row)
+
+            #does default rotation unless new, less or different guards than before
             new_state = prev_state.copy()
             if prev_availability != availability:
                 for i in range(len(availability)):
-                    
+                    #if guard is leaving mark station as unattended
                     if not availability[i] and prev_availability[i]:
                         new_state[new_state.index(i)] = -1
+                #if different guards, find an unattended station and man it
                 for i in range(len(availability)):
                     if availability[i] and not prev_availability[i]:
                         if -1 in new_state:
                             new_state[new_state.index(-1)] = i
                 
+            #if more guards than before, open next most impotant station
             if num_avail > prev_num_avail:
                 for guard_num in range(len(availability)):
                     if availability[guard_num] and guard_num not in new_state:
                         new_state.append(guard_num)
 
+            #if less guards, shift so that least important station is unattended
             elif num_avail < prev_num_avail:
                 while -1 in new_state:
                     index = new_state.index(-1)
                     temp = new_state[index]
                     new_state[index] = new_state[-1]
                     new_state.pop(-1)
+
+            #this is a rotation #####
             temp = new_state.copy() + [-1] * (len(self.rotation_cycle) - len(new_state))
             importance_index = {name: i for i, name in enumerate(self.station_importance_descending[::-1])}
             reordered = [temp[importance_index[station]] for station in self.rotation_cycle]

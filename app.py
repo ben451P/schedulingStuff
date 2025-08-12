@@ -264,14 +264,12 @@ def shifts():
         end_times = request.form.getlist("end_time[]")
 
         attendance = request.form.getlist("attendance[]")
-        print(attendance)
+        print(attendance, len(attendance))
         attendance = [i == "true" for i in attendance]
 
         lunch_break = request.form.getlist("lunch_break[]")
-        print(lunch_break)
+        print(lunch_break, len(lunch_break))
         lunch_break = [i == "true" for i in lunch_break]
-
-        print(attendance,lunch_break)
 
         for i in range(len(start_times)):
             if time_to_minutes(start_times[i]) > time_to_minutes(end_times[i]):
@@ -292,7 +290,6 @@ def shifts():
         return redirect(url_for("shifts"))
 
     shifts_list = preferences.shifts or []
-    print(shifts_list)
     return render_template('shifts.html',shifts_list=shifts_list, enumerate=enumerate)
 
 @app.route('/generate_schedule',methods=["POST"])
