@@ -1,10 +1,10 @@
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
-from backend.utils import minutes_to_time, military_to_normal
 import io
 
-from backend.scheduler import Scheduler
+from .scheduler import Scheduler
+from .utils import minutes_to_time, military_to_normal
 
 
 class XLSXWriter:

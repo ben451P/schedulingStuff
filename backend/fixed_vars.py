@@ -1,6 +1,6 @@
 #these should be deleted later
-from backend.station import Station
-from backend.utils import time_to_minutes
+from .station import Station
+from .utils import time_to_minutes
 
 ACCEPTABLE_LUNCH_START_TIME_RANGE = (time_to_minutes("13:00"), time_to_minutes("16:00"))
 

@@ -1,6 +1,6 @@
-from backend.utils import minutes_to_time, time_to_minutes
-from backend.guard import Guard
-from backend.station import Station
+from .utils import minutes_to_time, time_to_minutes
+from .guard import Guard
+from .station import Station
 
 class Scheduler:
     def __init__(self, start, end, lunch_start, lunch_end, rotation_cycle, importance_order, coverage_times, shifts):

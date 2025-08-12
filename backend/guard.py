@@ -1,4 +1,4 @@
-from backend.utils import time_to_minutes
+from .utils import time_to_minutes
 
 class Guard:
     def __init__(self, name, start, end):
