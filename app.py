@@ -5,8 +5,10 @@ import os
 from sqlalchemy import JSON
 from sqlalchemy.orm.attributes import flag_modified
 from dotenv import load_dotenv
+
 from backend.utils import time_to_minutes
 from backend.scheduler import Scheduler
+from backend.xlsx_writer import XLSXWriter
 
 ROTATION_CYCLE = {"data":[
     "Kiddie", "Dive", "Main", "Break", "First Aid", "Slide",
@@ -321,7 +323,9 @@ def generate_schedule():
     scheduler.manually_override_lunches(lunches)
     scheduler.schedule_lunches()
     scheduler.create_base_schedule()
-    excel_file = scheduler.convert_to_excel()
+
+    writer = XLSXWriter(scheduler)
+    excel_file = writer.convert_to_excel()
     
     return send_file(
         excel_file,
