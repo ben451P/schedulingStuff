@@ -1,13 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from authlib.integrations.flask_client import OAuth
 import os
 from sqlalchemy import JSON
-from werkzeug.utils import secure_filename
-from datetime import datetime
 from sqlalchemy.orm.attributes import flag_modified
-import json
 from dotenv import load_dotenv
 from utils import time_to_minutes
 from scheduler import Scheduler
@@ -23,19 +19,19 @@ STATION_IMPORTANCE_DESCENDING = {"data":[
 ]}
 
 SHIFTS = {"data":[
-    ["Guard A", "09:45", "15:30"],
-    ["Guard B", "09:45", "15:30"],
-    ["Guard C", "10:30", "16:00"],
-    ["Guard D", "10:30", "16:00"],
-    ["Guard E", "11:00", "20:00"],
-    ["Guard F", "11:00", "20:00"],
-    ["Guard G", "11:00", "20:00"],
-    ["Guard H", "11:00", "20:00"],
-    ["Guard I", "13:00", "19:00"],
-    ["Guard J", "14:00", "20:00"],
-    ["Guard K", "14:00", "20:00"],
-    ["Guard L", "14:00", "20:00"],
-    ["Guard M", "15:30", "20:00"],
+    ["Guard A", "09:45", "15:30", True, False],
+    ["Guard B", "09:45", "15:30", True, False],
+    ["Guard C", "10:30", "16:00", True, False],
+    ["Guard D", "10:30", "16:00", True, False],
+    ["Guard E", "11:00", "20:00", True, False],
+    ["Guard F", "11:00", "20:00", True, False],
+    ["Guard G", "11:00", "20:00", True, False],
+    ["Guard H", "11:00", "20:00", True, False],
+    ["Guard I", "13:00", "19:00", True, False],
+    ["Guard J", "14:00", "20:00", True, False],
+    ["Guard K", "14:00", "20:00", True, False],
+    ["Guard L", "14:00", "20:00", True, False],
+    ["Guard M", "15:30", "20:00", True, False],
 ]}
 # Load environment variables
 load_dotenv()
@@ -111,17 +107,25 @@ def initialize_default_data():
     
 # Routes
 @app.route('/')
+@login_required
 def index():
-    if not current_user.is_authenticated:
-        return redirect(url_for("login"))
     return render_template('index.html')
 
-@app.route('/login')
+@app.route('/login',methods=["GET","POST"])
 def login():
-    login_user(User.query.first())
-    return redirect(url_for('index'))
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
 
-@app.route('/logout')
+        user = User.query.filter_by(email=email).first()
+
+        if user.password.strip() == password.strip():
+            login_user(user)
+            flash("Successfully logged in","success")
+        return redirect(url_for('index'))
+    return render_template("login.html")
+
+@app.route('/logout', methods=["POST"])
 @login_required
 def logout():
     logout_user()
@@ -259,13 +263,25 @@ def shifts():
         start_times = request.form.getlist("start_time[]")
         end_times = request.form.getlist("end_time[]")
 
+        attendance = request.form.getlist("attendance[]")
+        print(attendance)
+        attendance = [i == "true" for i in attendance]
+        
+        lunch_break = request.form.getlist("lunch_break[]")
+        print(lunch_break)
+        lunch_break = [i == "true" for i in lunch_break]
+
+        print(attendance,lunch_break)
+
         for i in range(len(start_times)):
             if time_to_minutes(start_times[i]) > time_to_minutes(end_times[i]):
                 flash("All start times must be before end times", "danger")
                 return redirect(url_for("shifts"))
 
-        shifts = [[g, s, e] for g, s, e in zip(guard_names, start_times, end_times)]
+        shifts = [[g, s, e, a, lb] for g, s, e, a, lb in zip(guard_names, start_times, end_times, attendance,lunch_break)]
         preferences.shifts = shifts
+        # print(shifts)
+        flag_modified(preferences,"shifts")
         try:
             db.session.commit()
             flash("Rotation order saved.", "success")
@@ -276,7 +292,8 @@ def shifts():
         return redirect(url_for("shifts"))
 
     shifts_list = preferences.shifts or []
-    return render_template('shifts.html',shifts_list=shifts_list)
+    print(shifts_list)
+    return render_template('shifts.html',shifts_list=shifts_list, enumerate=enumerate)
 
 @app.route('/generate_schedule',methods=["POST"])
 @login_required
@@ -289,10 +306,12 @@ def generate_schedule():
     lunch_end = preferences.acceptable_lunch_end
 
     cycle = preferences.rotation_cycle
-    print(cycle)
     importance = preferences.station_importance
     coverage_times = {i:[("11:00", "20:00")] for i in cycle} #change later
-    shifts = preferences.shifts
+    #essentially marks them abscent bc they can never be considered an available guard
+    # start_time <= time < end_time
+    shifts = [[a,b,c] if d else [a,"00:00","00:00"] for a,b,c,d,_ in preferences.shifts]
+    lunches = [e for _,_,_,_,e in preferences.shifts]
 
     scheduler = Scheduler(start,
                           end,
@@ -302,6 +321,7 @@ def generate_schedule():
                           importance,
                           coverage_times,
                           shifts)
+    scheduler.manually_override_lunches(lunches)
     scheduler.schedule_lunches()
     scheduler.create_base_schedule()
     excel_file = scheduler.convert_to_excel()

@@ -40,17 +40,12 @@ class Scheduler:
             else:
                 guards.append(guard)
         return guards
+    
+    def manually_override_lunches(self, lunches):
+        for i in range(len(self.guards)):
+            if not self.guards[i].start_time == self.guards[i].end_time:
+                self.guards[i].lunch_break = lunches[i]
 
-
-    def exchange_numbers(self,num1, num2, time):
-        up_to = (time - self.start_time) / 15
-        for j in range(up_to):
-            for i in range(len(self.schedule[j])):
-                if self.schedule[j][i] == num1:
-                    self.schedule[j][i] = num2
-                elif self.schedule[j][i] == num2:
-                    self.schedule[j][i] = num1
-        return self.schedule
 
     def available_guards(self, time_str):
         time = time_to_minutes(time_str)
@@ -200,13 +195,12 @@ class Scheduler:
         wb = Workbook()
         ws = wb.active
         ws.title = "Schedule"
-        for guard in self.guards:
-            if guard.lunch_break:
-                print(guard.name,minutes_to_time(guard.lunch_break_start))
-        
+
+        # build time labels
         times = [minutes_to_time(t) for t in range(self.start, self.end, 15)]
         times = [military_to_normal(t) for t in times]
-        
+
+        # build dataframe
         df = pd.DataFrame(
             self.schedule,
             index=times,
@@ -214,31 +208,43 @@ class Scheduler:
         )
         df = df[self.rotation_cycle]
         df = df.T
-        
+
+        # headers
         ws['A1'] = 'Time'
         for col_idx, time in enumerate(times, start=2):
             ws.cell(row=1, column=col_idx, value=time)
-        
+
+        # schedule table
         for row_idx, station in enumerate(self.rotation_cycle, start=2):
             ws.cell(row=row_idx, column=1, value=station)
             for col_idx, time in enumerate(times, start=2):
                 value = df.loc[station, time]
-                if value == -1:
-                    ws.cell(row=row_idx, column=col_idx, value="")
-                else:
-                    ws.cell(row=row_idx, column=col_idx, value=value)
-        
+                ws.cell(row=row_idx, column=col_idx, value="" if value == -1 else value)
+
+        # style anomalies
         anomaly_fill = self._apply_excel_styling(ws, len(times))
-        
         anomaly_cells = self.detect_rotation_anomalies(df)
         for row, col in anomaly_cells:
             ws.cell(row=row, column=col).fill = anomaly_fill
-        
+
+        # lunch breaks table (3 rows below schedule)
+        lunch_start_row = len(self.rotation_cycle) + 4
+        ws.cell(row=lunch_start_row, column=1, value="Guard")
+        ws.cell(row=lunch_start_row, column=2, value="Break Start")
+
+        current_row = lunch_start_row + 1
+        for guard in self.guards:
+            if guard.lunch_break:
+                ws.cell(row=current_row, column=1, value=guard.name)
+                ws.cell(row=current_row, column=2, value=military_to_normal(minutes_to_time(guard.lunch_break_start)))
+                current_row += 1
+
+        # save to memory for Flask download
         output = io.BytesIO()
         wb.save(output)
-        output.seek(0)  # Reset pointer to the start
-        
+        output.seek(0)
         return output
+
     
     def detect_rotation_anomalies(self, df):
         anomaly_cells = set()

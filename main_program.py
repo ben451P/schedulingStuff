@@ -8,8 +8,6 @@ if __name__ == "__main__":
     scheduler.convert_to_excel()
 
     # be able to set a rotation start (3)
-    # add another station of see manager (5)
     # adjust rotation schedule to account for when certain stations wanna be closed (1)
-    #finish front end (5)
-    # be able to manually take away lunch breaks (do in front end)
     #handle when too many guards for stations by adding new "standby" stations lowest prioirty (4)
+    #update anomly handler: whenever a station dissaperas, highligh number

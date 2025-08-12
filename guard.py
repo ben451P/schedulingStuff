@@ -15,7 +15,7 @@ class Guard:
         return self.name
     
     def determine_if_lunch_break(self):
-        self.lunch_break = self.end_time - self.start_time > 360
+        self.lunch_break = self.end_time - self.start_time > 480
 
     def is_available_at(self, time: int) -> bool:
         on_shift = self.start_time <= time < self.end_time

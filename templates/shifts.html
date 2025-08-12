@@ -30,15 +30,19 @@
                 <table class="table table-striped" id="shifts-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Guard Name</th>
                             <th>Start Time</th>
                             <th>End Time</th>
+                            <th>Attendance</th>
+                            <th>Lunch Break</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody id="shifts-tbody">
-                        {% for shift in shifts_list %}
+                        {% for idx, shift in enumerate(shifts_list, start=1) %}
                         <tr>
+                            <td class="row-number">{{ idx }}</td>
                             <td>
                                 <input type="text" class="form-control form-control-sm"
                                        name="guard_name[]" value="{{ shift[0] }}" required>
@@ -52,6 +56,20 @@
                                        name="end_time[]" value="{{ shift[2] }}" required>
                             </td>
                             <td class="text-center">
+                                <input type="hidden" name="attendance_hidden[]" value="false">
+                                <input type="checkbox" name="attendance_checkbox[]" value="true" {% if shift[3] %}checked{% endif %}>
+                            </td>
+                            <td class="text-center">
+                                <input type="hidden" name="lunch_break_hidden[]" value="false">
+                                <input type="checkbox" name="lunch_break_checkbox[]" value="true" {% if shift[4] %}checked{% endif %}>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary move-up">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary move-down">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
                                 <button type="button" class="btn btn-danger btn-sm remove-shift">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -63,6 +81,40 @@
             </div>
         </div>
     </div>
+    <script>
+        document.getElementById('shifts-form').addEventListener('submit', function(e) {
+            const attendanceHidden = Array.from(document.getElementsByName('attendance_hidden[]'));
+            const attendanceCheckbox = Array.from(document.getElementsByName('attendance_checkbox[]'));
+
+            const lunchHidden = Array.from(document.getElementsByName('lunch_break_hidden[]'));
+            const lunchCheckbox = Array.from(document.getElementsByName('lunch_break_checkbox[]'));
+
+            // Remove old merged inputs if they exist
+            document.querySelectorAll('input[name="attendance[]"]').forEach(el => el.remove());
+            document.querySelectorAll('input[name="lunch_break[]"]').forEach(el => el.remove());
+
+            // Create new hidden inputs with merged values
+            for (let i = 0; i < attendanceHidden.length; i++) {
+                const val = attendanceCheckbox[i].checked ? "true" : "false";
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'attendance[]';
+                input.value = val;
+                this.appendChild(input);
+            }
+
+            for (let i = 0; i < lunchHidden.length; i++) {
+                const val = lunchCheckbox[i].checked ? "true" : "false";
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'lunch_break[]';
+                input.value = val;
+                this.appendChild(input);
+            }
+        });
+
+    </script>
+
 </form>
 
 <script>
@@ -70,34 +122,64 @@ document.addEventListener("DOMContentLoaded", function() {
     const tbody = document.getElementById("shifts-tbody");
     const addShiftBtn = document.getElementById("add-shift");
 
-    // Add new row
-    addShiftBtn.addEventListener("click", function() {
+    function updateRowNumbers() {
+        tbody.querySelectorAll("tr").forEach((row, index) => {
+            row.querySelector(".row-number").textContent = index + 1;
+        });
+    }
+
+    function createNewRow() {
         const newRow = document.createElement("tr");
         newRow.innerHTML = `
-            <td>
-                <input type="text" class="form-control form-control-sm" name="guard_name[]" required>
-            </td>
-            <td>
-                <input type="time" class="form-control form-control-sm" name="start_time[]" required>
-            </td>
-            <td>
-                <input type="time" class="form-control form-control-sm" name="end_time[]" required>
+            <td class="row-number"></td>
+            <td><input type="text" class="form-control form-control-sm" name="guard_name[]" required></td>
+            <td><input type="time" class="form-control form-control-sm" name="start_time[]" required></td>
+            <td><input type="time" class="form-control form-control-sm" name="end_time[]" required></td>
+            <td class="text-center">
+                <input type="hidden" name="attendance[]" value="false">
+                <input type="checkbox" name="attendance[]" value="true" checked>
             </td>
             <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm remove-shift">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <input type="hidden" name="lunch_break[]" value="false">
+                <input type="checkbox" name="lunch_break[]" value="true">
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-primary move-up"><i class="fas fa-arrow-up"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-primary move-down"><i class="fas fa-arrow-down"></i></button>
+                <button type="button" class="btn btn-danger btn-sm remove-shift"><i class="fas fa-trash"></i></button>
             </td>
         `;
-        tbody.appendChild(newRow);
+        return newRow;
+    }
+
+    // Add new row
+    addShiftBtn.addEventListener("click", function() {
+        tbody.appendChild(createNewRow());
+        updateRowNumbers();
+    });
+
+    // Move up/down
+    tbody.addEventListener("click", function(e) {
+        const row = e.target.closest("tr");
+        if (e.target.closest(".move-up") && row.previousElementSibling) {
+            tbody.insertBefore(row, row.previousElementSibling);
+            updateRowNumbers();
+        }
+        if (e.target.closest(".move-down") && row.nextElementSibling) {
+            tbody.insertBefore(row.nextElementSibling, row);
+            updateRowNumbers();
+        }
     });
 
     // Remove row
     tbody.addEventListener("click", function(e) {
         if (e.target.closest(".remove-shift")) {
             e.target.closest("tr").remove();
+            updateRowNumbers();
         }
     });
+
+    updateRowNumbers();
 });
 </script>
 {% endblock %}
