@@ -1,4 +1,4 @@
-from utils import time_to_minutes
+from backend.utils import time_to_minutes
 
 class Station:
     def __init__(self, name, times_when_open: list):

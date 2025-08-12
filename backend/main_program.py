@@ -1,5 +1,5 @@
-from scheduler import Scheduler
-from fixed_vars import shifts
+from backend.scheduler import Scheduler
+from backend.fixed_vars import shifts
 
 if __name__ == "__main__":
     scheduler = Scheduler(shifts)

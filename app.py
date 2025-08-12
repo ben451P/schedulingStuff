@@ -5,8 +5,8 @@ import os
 from sqlalchemy import JSON
 from sqlalchemy.orm.attributes import flag_modified
 from dotenv import load_dotenv
-from utils import time_to_minutes
-from scheduler import Scheduler
+from backend.utils import time_to_minutes
+from backend.scheduler import Scheduler
 
 ROTATION_CYCLE = {"data":[
     "Kiddie", "Dive", "Main", "Break", "First Aid", "Slide",
@@ -266,7 +266,7 @@ def shifts():
         attendance = request.form.getlist("attendance[]")
         print(attendance)
         attendance = [i == "true" for i in attendance]
-        
+
         lunch_break = request.form.getlist("lunch_break[]")
         print(lunch_break)
         lunch_break = [i == "true" for i in lunch_break]

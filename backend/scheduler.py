@@ -2,9 +2,9 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
-from utils import minutes_to_time, military_to_normal, time_to_minutes
-from guard import Guard
-from station import Station
+from backend.utils import minutes_to_time, military_to_normal, time_to_minutes
+from backend.guard import Guard
+from backend.station import Station
 import io
 
 class Scheduler:
@@ -70,8 +70,6 @@ class Scheduler:
         finished_scheduling = False
 
         needed_lunch_breaks = [guard.lunch_break for guard in self.guards]
-
-        
 
         while not finished_scheduling:
             check = needed_lunch_breaks.copy()
