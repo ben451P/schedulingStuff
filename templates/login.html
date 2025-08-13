@@ -6,8 +6,59 @@
     <title>Login - File Processor</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        .flash-notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 350px;
+        }
+
+        .slide-in-flash-messages {
+            animation: slideInRight 0.5s ease-out, fadeOut 0.5s ease-in 3.5s forwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+    </style>
 </head>
 <body class="bg-primary">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-notification-container py-1">
+        {% for category, message in messages %}
+        <div class="alert pr-2 alert-{{ category }} alert-dismissible fade show slide-in-flash-messages" role="alert">
+            <div class="d-flex align-items-center">
+                <strong class="flex-grow-1 mr-3">{{ message }}</strong>
+                <button type="button" class="btn btn-close m-0" data-dismiss="alert" aria-label="Close">
+                    <div class="text-danger">
+                    </div>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    {% block content %}{% endblock %}
 
 <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;">
     <div class="card shadow-sm" style="width: 100%; max-width: 400px;">

@@ -121,6 +121,10 @@ def login():
 
         user = User.query.filter_by(email=email).first()
 
+        if not user:
+            flash("User does not exist","warning")
+            return redirect(url_for('login'))
+
         if user.password.strip() == password.strip():
             login_user(user)
             flash("Successfully logged in","success")
