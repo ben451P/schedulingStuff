@@ -6,9 +6,14 @@ from sqlalchemy import JSON
 from sqlalchemy.orm.attributes import flag_modified
 from dotenv import load_dotenv
 
-from backend.utils import time_to_minutes
+from backend.utils import time_to_minutes, minutes_to_time
 from backend.scheduler import Scheduler
 from backend.xlsx_writer import XLSXWriter
+
+from debug.report import Report
+from debug.logger import Logger
+
+LOG_PATH = "debug/log.txt"
 
 ROTATION_CYCLE = {"data":[
     "Kiddie", "Dive", "Main", "Break", "First Aid", "Slide",
@@ -21,6 +26,7 @@ STATION_IMPORTANCE_DESCENDING = {"data":[
 ]}
 
 SHIFTS = {"data":[
+    #[name, start, end, attendance, lunch break]
     ["Guard A", "09:45", "15:30", True, False],
     ["Guard B", "09:45", "15:30", True, False],
     ["Guard C", "10:30", "16:00", True, False],
@@ -307,6 +313,10 @@ def generate_schedule():
     end = preferences.schedule_end
     lunch_start = preferences.acceptable_lunch_start
     lunch_end = preferences.acceptable_lunch_end
+    
+    # block of code to reduce acceptable lunch end by an hour, so that it ends at time and not starts at that time
+    lunch_end = time_to_minutes(lunch_end) - 60
+    lunch_end = minutes_to_time(lunch_end)
 
     cycle = preferences.rotation_cycle
     importance = preferences.station_importance
@@ -337,6 +347,33 @@ def generate_schedule():
         download_name="schedule.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+@app.route("/report_bug", methods=["POST"])
+def report_bug():
+    bug_desc = request.form.get("bug_description")
+    first_bug_bool = bool(request.form.get("first_bug_today"))  # Checkbox returns "yes" or None
+
+    account_id = current_user.id
+
+    # Create the report
+    report = Report(bug_desc, first_bug_bool, account_id)
+
+    # Option A: Let Report query DB itself (cleanest)
+    report.fetch_account_state(db, Preferences)  # pass your SQLAlchemy instance + model
+
+    # Option B: If you want to control how state is fetched:
+    # def account_state_callable(account_id):
+    #     user = User.query.get(account_id)
+    #     return {"id": user.id, "email": user.email, "role": user.role}
+    # report.fetch_account_state(account_state_callable)
+
+    # Write the log
+    logger = Logger(LOG_PATH)
+    logger.write_report(report)
+
+    flash("System architect notified of bug", "success")
+    return redirect(url_for("index"))
+
 
 @app.errorhandler(404)
 def not_found_error(error):

@@ -42,6 +42,7 @@
         </div>
     </div>
 </div>
+
 <div class="row mt-4 justify-content-center">  
     <div class="col-4 justify-content-center d-flex">
         <form action="/generate_schedule" method="POST">
@@ -50,8 +51,42 @@
             </button>
         </form>
     </div>
+    <div class="col-4 justify-content-center d-flex ms-auto">
+        <!-- Trigger Modal -->
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#bugReportModal">
+            <i class="fa fa-bug"></i> Report Bug
+        </button>
+    </div>
 </div>
 
-
-
+<!-- Bug Report Modal -->
+<div class="modal fade" id="bugReportModal" tabindex="-1" aria-labelledby="bugReportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form action="/report_bug" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title" id="bugReportModalLabel">Report a Bug</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Bug Description -->
+          <div class="mb-3">
+            <label for="bugDescription" class="form-label">Bug Description</label>
+            <textarea class="form-control" id="bugDescription" name="bug_description" rows="4" required></textarea>
+          </div>
+          <!-- First Bug Checkbox -->
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="firstBug" name="first_bug_today" value="yes">
+            <label class="form-check-label" for="firstBug">
+              This is the first bug I am reporting today
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Submit Bug</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}
