@@ -5,6 +5,7 @@ import os
 from sqlalchemy import JSON
 from sqlalchemy.orm.attributes import flag_modified
 from dotenv import load_dotenv
+from datetime import datetime, timezone
 
 from backend.utils import time_to_minutes, minutes_to_time
 from backend.scheduler import Scheduler
@@ -83,6 +84,13 @@ class Preferences(db.Model):
     station_importance = db.Column(JSON) #, default=load_default_importance
     station_coverage_times = db.Column(JSON)
     shifts = db.Column(JSON)
+
+class BugReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    report_user_id = db.Column(db.Integer)
+    time_stamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    bug_description = db.Column(db.String)
+    resolved = db.Column(db.Boolean, default=False)
 
 
 @login_manager.user_loader
@@ -229,7 +237,6 @@ def rotation_cycle():
 
         return redirect(url_for('rotation_cycle'))
 
-    # GET: prepare cycles for template (convert legacy strings to dicts for template)
     cycles = preferences.rotation_cycle or []
     if cycles and isinstance(cycles[0], str):
         cycles = [{"id": c, "name": c} for c in cycles]
@@ -290,7 +297,6 @@ def shifts():
 
         shifts = [[g, s, e, a, lb] for g, s, e, a, lb in zip(guard_names, start_times, end_times, attendance,lunch_break)]
         preferences.shifts = shifts
-        # print(shifts)
         flag_modified(preferences,"shifts")
         try:
             db.session.commit()
@@ -351,23 +357,23 @@ def generate_schedule():
 @app.route("/report_bug", methods=["POST"])
 def report_bug():
     bug_desc = request.form.get("bug_description")
-    first_bug_bool = bool(request.form.get("first_bug_today"))  # Checkbox returns "yes" or None
 
-    account_id = current_user.id
+    time = datetime.now(timezone.utc)
 
-    # Create the report
-    report = Report(bug_desc, first_bug_bool, account_id)
+    bug_report = BugReport(
+        report_user_id = current_user.id,
+        bug_description = bug_desc,
+        time_stamp=time
+    )
+    db.session.add(bug_report)
+    db.session.commit()
 
-    # Option A: Let Report query DB itself (cleanest)
-    report.fetch_account_state(db, Preferences)  # pass your SQLAlchemy instance + model
+    bug_report = BugReport.query.filter_by(time_stamp=time).first()
 
-    # Option B: If you want to control how state is fetched:
-    # def account_state_callable(account_id):
-    #     user = User.query.get(account_id)
-    #     return {"id": user.id, "email": user.email, "role": user.role}
-    # report.fetch_account_state(account_state_callable)
+    report = Report(bug_report)
 
-    # Write the log
+    report.fetch_account_state(db, Preferences)
+
     logger = Logger(LOG_PATH)
     logger.write_report(report)
 

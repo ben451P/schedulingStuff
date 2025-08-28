@@ -1,0 +1,142 @@
+{
+  "id": 1,
+  "account": 1,
+  "schedule_start": "10:00",
+  "schedule_end": "19:30",
+  "acceptable_lunch_start": "13:00",
+  "acceptable_lunch_end": "17:00",
+  "rotation_cycle": [
+    "Kiddie",
+    "Dive",
+    "Main",
+    "Break",
+    "First Aid",
+    "Slide",
+    "Main2",
+    "Rover",
+    "Lap",
+    "See Manager",
+    "Bathroom Break"
+  ],
+  "station_importance": [
+    "Lap",
+    "Bathroom Break",
+    "Rover",
+    "Main2",
+    "See Manager",
+    "Slide",
+    "Kiddie",
+    "First Aid",
+    "Dive",
+    "Main",
+    "Break"
+  ],
+  "station_coverage_times": null,
+  "shifts": [
+    [
+      "Adam",
+      "09:30",
+      "19:30",
+      true,
+      true
+    ],
+    [
+      "Sophie",
+      "09:30",
+      "15:00",
+      true,
+      false
+    ],
+    [
+      "Aidan",
+      "10:00",
+      "16:00",
+      true,
+      false
+    ],
+    [
+      "Kylar",
+      "10:00",
+      "16:00",
+      true,
+      false
+    ],
+    [
+      "Brianna",
+      "10:00",
+      "16:00",
+      true,
+      false
+    ],
+    [
+      "JB",
+      "10:00",
+      "20:00",
+      true,
+      true
+    ],
+    [
+      "Tommy",
+      "10:00",
+      "20:00",
+      true,
+      true
+    ],
+    [
+      "Rashad",
+      "10:00",
+      "20:00",
+      true,
+      true
+    ],
+    [
+      "Brandon",
+      "12:00",
+      "20:00",
+      true,
+      true
+    ],
+    [
+      ".",
+      "16:00",
+      "20:00",
+      false,
+      false
+    ],
+    [
+      "Kevin",
+      "14:00",
+      "20:00",
+      true,
+      false
+    ],
+    [
+      "Leena",
+      "14:00",
+      "20:00",
+      true,
+      false
+    ],
+    [
+      "Raymond",
+      "14:00",
+      "20:00",
+      true,
+      false
+    ],
+    [
+      "Emily",
+      "15:00",
+      "20:00",
+      true,
+      false
+    ],
+    [
+      "Julian",
+      "15:00",
+      "20:00",
+      true,
+      false
+    ]
+  ]
+}

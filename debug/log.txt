@@ -8,3 +8,31 @@ Description: s
 First bug today: False
 Account state: {"id": 1, "account": 1, "schedule_start": "11:00", "schedule_end": "19:30", "acceptable_lunch_start": "14:00", "acceptable_lunch_end": "17:00", "rotation_cycle": ["Kiddie", "Dive", "Main", "Break", "First Aid", "Slide", "Main2", "Rover", "Lap", "See Manager", "Bathroom Break"], "station_importance": ["Bathroom Break", "Rover", "Main2", "See Manager", "Slide", "Kiddie", "First Aid", "Dive", "Lap", "Main", "Break"], "station_coverage_times": null, "shifts": [["Sofia", "09:45", "15:00", true, false], ["Alyssa", "09:45", "13:30", true, false], ["Nylah", "10:30", "16:00", true, false], ["Sophie", "10:30", "15:00", true, false], ["Ben", "11:00", "20:15", false, true], ["Aidan", "11:00", "20:15", true, true], ["JB", "11:00", "20:15", true, true], ["Yael", "11:00", "20:15", true, true], ["Jon", "11:00", "15:00", true, false], ["Alice", "15:00", "20:15", false, false], ["Rachel", "15:00", "20:15", true, false], ["Eliana", "13:00", "20:15", true, false], ["Ian", "16:00", "20:15", true, false]]}
 --------------------------------------------------------------------------------
+[2025-08-28T17:39:40+00:00] BUG REPORT (account_id=1, bug_id=2)
+Description: ss
+[2025-08-28T17:40:03+00:00] BUG REPORT (account_id=1, bug_id=3)
+Description: ss
+[2025-08-28T17:40:15+00:00] BUG REPORT (account_id=1, bug_id=4)
+Description: ss
+[2025-08-28T17:40:17+00:00] BUG REPORT (account_id=1, bug_id=5)
+Description: ss
+[2025-08-28T17:42:28+00:00] BUG REPORT (account_id=1, bug_id=6)
+Description: ss
+[2025-08-28T17:45:46+00:00] BUG REPORT (account_id=1, bug_id=7)
+Description: ss
+[2025-08-28T17:46:00+00:00] BUG REPORT (account_id=1, bug_id=8)
+Description: ss
+--------------------------------------------------------------------------------
+[2025-08-28T17:46:39+00:00] BUG REPORT (account_id=1, bug_id=9)
+Description: s
+[2025-08-28T17:46:51+00:00] BUG REPORT (account_id=1, bug_id=10)
+Description: s
+--------------------------------------------------------------------------------
+[2025-08-28T17:47:13+00:00] BUG REPORT (account_id=1, bug_id=11)
+Description: s
+--------------------------------------------------------------------------------
+[2025-08-28T17:48:22+00:00] BUG REPORT (account_id=1, bug_id=12)
+Description: s
+[2025-08-28T17:49:19+00:00] BUG REPORT (account_id=1, bug_id=13)
+Description: s
+--------------------------------------------------------------------------------
